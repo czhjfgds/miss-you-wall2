@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>思念消息墙</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Microsoft YaHei', sans-serif;
+            color: white;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            font-size: 28px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .message-btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        .message-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        #musicPlayer {
+            display: none; /* 隐藏音乐播放器 */
+        }
+        
+        .message-item {
+            position: absolute;
+            padding: 12px 18px;
+            border-radius: 10px;
+            font-size: 16px; /* 固定字体大小 */
+            z-index: 1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            color: black;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            max-width: 180px;
+            word-wrap: break-word;
+            opacity: 0;
+            transform: scale(0.8);
+            animation: popIn 0.5s forwards;
+        }
+        
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            70% {
+                transform: scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        .message-item:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        
+        .heart-icon {
+            margin-right: 8px;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message-text {
+            flex: 1;
+        }
+        
+        .message-wall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .message-wall .message-item {
+            pointer-events: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>你有一条思念消息待查收 💌</h1>
+        <button class="message-btn" onclick="startExperience()">点击查收</button>
+        
+        <div id="musicPlayer">
+            <audio id="bgMusic" loop>
+                <source src="https://er-sycdn.kuwo.cn/4ffd5027c5cde3cee4f13f482ac7bbb7/6906ed48/resource/30106/trackmedia/M5000009zwEW3wWWOY.mp3" type="audio/mpeg">
+                您的浏览器不支持音频播放
+            </audio>
+        </div>
+    </div>
+
+    <div class="message-wall" id="messageWall"></div>
+
+    <script>
+        // 温柔提示文字列表
+        const tips = [
+            '好好吃饭', '多喝热水', '早点休息', '别太累了', '注意身体',
+            '天冷加衣', '路上小心', '珍惜每一刻', '累不累呀', '还好吗',
+            '想你了', '在干嘛', '早安', '午安', '晚安',
+            '加油哦', '慢慢来', '学会爱自己，才能更好的爱别人', '会好的', '别担心',
+            '有我在QAQ', '我陪你', '辛苦了', '谢谢你', '乖乖等我AVA',
+            '开心吗', '笑一笑', '放松点', '深呼吸', '休息下',
+            '幸福的秘诀是做好自己', '顺顺利利', '想和你一起看日落', '顺利吗', '保持好心情',
+            '降温了', '带伞没', '吃饱没', '睡好没', '别熬夜',
+            '想聊聊', '听你说', '我在这', '你今天过得好吗', '注意保暖',
+            '相信你', '可以的', '你很棒', '别勉强', '慢慢来',
+        '我好幸运', '慢慢又长长的爱你', '加油哟~', '惦记你', '要相信自己奥',
+            '要开心~', '要快乐', '要健康', '要平安', '我们要幸福',
+            '照顾好自己', '等你呢', '想着你', '好想马上见到你', '别感冒',
+            '别太拼', '歇会吧', '放松下', '期待下一次见面', '别焦虑',
+            '所有烦恼都消失', '我明白', '保持微笑呀', '有你真好', '期待下一次见面',
+            '需要帮', '尽管说', '要抱抱', '你让我觉得很幸福', '喜欢你',
+            '今天冷', '记得想我', '梦想成真', '你超棒的', '别着凉',
+            '吃饭没', '喝水没', '休息没', '累不累', '爱你哟~',
+            '想你了', '好想和你出去玩', '别太大压力', '好喜欢你', '好梦，梦里见',
+            '陪着你', '亲亲', '今天过得开心嘛', '每天都要元气满满哦', '支持你',
+            '别太累啦', '心情怎么样', '今天累吗', '想听你说话', '喜欢你的笑容',
+            '今天过得如何', '有想我吗', '好想抱抱你', '你笑起来真好看', '今天也要开心',
+            '今天工作顺利吗', '今天学习累吗', '今天有好好吃饭吗', '今天有想我吗', '今天有开心的事吗',
+            '今天有烦心事吗', '今天有想分享的事吗', '今天有想我吗', '今天有想我吗', '今天有想我吗'
+        ];
+
+        // 背景颜色
+        const bgColors = [
+            'rgba(255, 182, 193, 0.85)', 'rgba(135, 206, 235, 0.85)', 'rgba(144, 238, 144, 0.85)', 
+            'rgba(230, 230, 250, 0.85)', 'rgba(255, 255, 224, 0.85)', 'rgba(221, 160, 221, 0.85)',
+            'rgba(255, 127, 80, 0.85)', 'rgba(255, 228, 196, 0.85)', 'rgba(127, 255, 212, 0.85)',
+            'rgba(255, 228, 225, 0.85)', 'rgba(240, 255, 240, 0.85)', 'rgba(255, 218, 185, 0.85)',
+            'rgba(175, 238, 238, 0.85)', 'rgba(255, 240, 245, 0.85)', 'rgba(253, 245, 230, 0.85)',
+            'rgba(255, 250, 205, 0.85)'
+        ];
+
+        function startExperience() {
+            // 播放背景音乐
+            const music = document.getElementById('bgMusic');
+            music.play().catch(e => {
+                alert('请点击页面任意位置以允许音频播放');
+            });
+            
+            // 隐藏按钮和容器
+            document.querySelector('.message-btn').style.display = 'none';
+            document.querySelector('.container').style.opacity = '0';
+            setTimeout(() => {
+                document.querySelector('.container').classList.add('hidden');
+            }, 500);
+            
+            // 开始显示消息
+            startMessages();
+        }
+
+        function startMessages() {
+            const messageWall = document.getElementById('messageWall');
+            const totalMessages = 200;
+            let messageCount = 0;
+            
+            // 每0.25秒创建一条消息
+            const messageInterval = setInterval(() => {
+                if (messageCount < totalMessages) {
+                    createMessage(messageWall);
+                    messageCount++;
+                } else {
+                    clearInterval(messageInterval);
+                }
+            }, 250); // 250毫秒 = 0.25秒
+        }
+
+        function createMessage(container) {
+            const message = document.createElement('div');
+            message.className = 'message-item';
+            
+            // 添加💌图标
+            const heartIcon = document.createElement('span');
+            heartIcon.className = 'heart-icon';
+            heartIcon.textContent = '💌';
+            
+            // 添加文本
+            const text = document.createElement('span');
+            text.className = 'message-text';
+            text.textContent = tips[Math.floor(Math.random() * tips.length)];
+            
+            message.appendChild(heartIcon);
+            message.appendChild(text);
+            message.style.background = bgColors[Math.floor(Math.random() * bgColors.length)];
+            
+            // 随机位置，确保不会太靠近边缘
+            const maxWidth = window.innerWidth - 200;
+            const maxHeight = window.innerHeight - 100;
+            const x = Math.random() * maxWidth;
+            const y = Math.random() * maxHeight;
+            message.style.left = x + 'px';
+            message.style.top = y + 'px';
+            
+            // 随机旋转角度
+            const rotate = Math.random() * 10 - 5;
+            message.style.transform += ` rotate(${rotate}deg)`;
+            
+            container.appendChild(message);
+        }
+
+        // 解决自动播放限制
+        document.addEventListener('click', function() {
+            const music = document.getElementById('bgMusic');
+            if (music && music.paused) {
+                music.play();
+            }
+        });
+    </script>
+</body>
+</html>
